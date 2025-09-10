@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Teacherfinder</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --container: 980px;
+  --gutter: 24px;
+  --muted:#777;
+  --text:#222;
+  --brand:#e85959;
+  --line:#e9e9ef;
+  --chip:#f7f4f7;
+  --badge:#ffe28a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:16px/1.5 Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.container{max-width:var(--container);margin:0 auto;padding:0 var(--gutter);}
+.header{border-bottom:1px solid var(--line);background:#fff;}
+.header .row{display:flex;align-items:center;gap:16px;padding:18px 0;}
+.brand{font-family:"Playfair Display",serif;font-size:28px;color:#c56;}
+.nav a{margin-right:18px;color:var(--brand);}
+.nav a:hover{color:#000;}
+.search{margin-left:auto;}
+.search input{padding:8px 12px;border:1px solid var(--line);}
+.btn{padding:8px 18px;border:1px solid var(--brand);color:var(--brand);background:#fff;cursor:pointer;}
+.btn:hover{background:var(--brand);color:#fff;}
+h2{margin:30px 0 16px;font-family:"Playfair Display",serif;}
+
+/* Top Teachers */
+.top-teachers{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:20px;}
+.teacher-card{text-align:center;display:block}
+.teacher-card img{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid #f2b1b1;}
+.teacher-card .circle{width:110px;height:110px;border-radius:50%;background:var(--chip);display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:600;border:3px solid #f2b1b1;}
+.teacher-card small{display:block;color:#8a8a93;margin-top:2px}
+.star{color:gold;font-size:18px;}
+
+/* Statistics */
+.stats table{width:100%;border-collapse:collapse;}
+.stats th,.stats td{padding:10px;border-bottom:1px solid var(--line);text-align:left;}
+.stats tbody tr:nth-child(odd){background:#fbf7fb}
+.pagination{display:flex;gap:12px;align-items:center;margin:14px 0 6px;color:#8a7e90;}
+.pagination a,.pagination span{padding:6px 8px;border-radius:4px}
+.pagination a{border:1px solid transparent;color:#c56}
+.pagination a:hover{border-color:#e9e9ef;color:#000}
+.pagination .active{background:#f7f4f7;border:1px solid #e9e9ef;color:#000}
+
+/* ===== Favorites: шаг по 1 карточке ===== */
+.favorites-section{position:relative; --step:182px;} /* 160 ширина карты + 22 gap */
+.favorites-section .carousel{overflow:hidden;border-radius:8px;}
+.favorites-section .track{display:flex;gap:22px;transition:transform .45s ease;}
+
+/* базовые карточки */
+.favorites-section .fav-card{min-width:160px;text-align:center}
+.favorites-section .fav-card img{width:130px;height:130px;border-radius:50%;object-fit:cover;border:3px solid #f2b1b1;}
+.favorites-section .fav-card .circle{width:130px;height:130px;border-radius:50%;background:#fff;border:3px solid #f2b1b1;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;color:#e36d6d}
+.favorites-section .fav-card b{display:block;margin-top:8px}
+.favorites-section .fav-card small{display:block;color:#8a8a93}
+
+/* радиокнопки-позиции (0..10) */
+.favorites-section input[type="radio"]{display:none}
+
+/* трансформации: двигаем трек на k*step */
+#pos-0:checked  ~ .carousel-wrap .track{transform:translateX(calc(-0 * var(--step)))}
+#pos-1:checked  ~ .carousel-wrap .track{transform:translateX(calc(-1 * var(--step)))}
+#pos-2:checked  ~ .carousel-wrap .track{transform:translateX(calc(-2 * var(--step)))}
+#pos-3:checked  ~ .carousel-wrap .track{transform:translateX(calc(-3 * var(--step)))}
+#pos-4:checked  ~ .carousel-wrap .track{transform:translateX(calc(-4 * var(--step)))}
+#pos-5:checked  ~ .carousel-wrap .track{transform:translateX(calc(-5 * var(--step)))}
+#pos-6:checked  ~ .carousel-wrap .track{transform:translateX(calc(-6 * var(--step)))}
+#pos-7:checked  ~ .carousel-wrap .track{transform:translateX(calc(-7 * var(--step)))}
+#pos-8:checked  ~ .carousel-wrap .track{transform:translateX(calc(-8 * var(--step)))}
+#pos-9:checked  ~ .carousel-wrap .track{transform:translateX(calc(-9 * var(--step)))}
+#pos-10:checked ~ .carousel-wrap .track{transform:translateX(calc(-10 * var(--step)))}
+
+/* стрелки внизу */
+.favorites-section .arrow{
+  position:absolute; bottom:-50px; top:auto; transform:none;
+  width:40px; height:40px; border-radius:999px; background:#fff; border:1px solid var(--line);
+  display:none; align-items:center; justify-content:center; cursor:pointer; user-select:none;
+  font-size:22px; color:#999; box-shadow:0 2px 6px rgba(0,0,0,.06);
+}
+.favorites-section .arrow:hover{color:#000}
+.favorites-section .arrow.left{left:calc(50% - 60px)}
+.favorites-section .arrow.right{left:calc(50% + 20px)}
+
+/* показываем правильные пары стрелок для текущей позиции */
+#pos-0:checked  ~ .carousel-wrap .right-to1,
+#pos-1:checked  ~ .carousel-wrap .left-to0,  #pos-1:checked  ~ .carousel-wrap .right-to2,
+#pos-2:checked  ~ .carousel-wrap .left-to1,  #pos-2:checked  ~ .carousel-wrap .right-to3,
+#pos-3:checked  ~ .carousel-wrap .left-to2,  #pos-3:checked  ~ .carousel-wrap .right-to4,
+#pos-4:checked  ~ .carousel-wrap .left-to3,  #pos-4:checked  ~ .carousel-wrap .right-to5,
+#pos-5:checked  ~ .carousel-wrap .left-to4,  #pos-5:checked  ~ .carousel-wrap .right-to6,
+#pos-6:checked  ~ .carousel-wrap .left-to5,  #pos-6:checked  ~ .carousel-wrap .right-to7,
+#pos-7:checked  ~ .carousel-wrap .left-to6,  #pos-7:checked  ~ .carousel-wrap .right-to8,
+#pos-8:checked  ~ .carousel-wrap .left-to7,  #pos-8:checked  ~ .carousel-wrap .right-to9,
+#pos-9:checked  ~ .carousel-wrap .left-to8,  #pos-9:checked  ~ .carousel-wrap .right-to10,
+#pos-10:checked ~ .carousel-wrap .left-to9 {display:flex}
+
+/* адаптив: на мобилках шаг меньше (карточки сжимаются) */
+@media (max-width:768px){
+  .favorites-section{--step:142px;} /* поджали: 120 карта + 22 gap */
+  .favorites-section .fav-card{min-width:120px}
+  .favorites-section .fav-card img,
+  .favorites-section .fav-card .circle{width:110px;height:110px}
+}
+
+
+/* Text block */
+.about{margin:32px 0;color:#444}
+.about p{margin:0 0 14px}
+
+/* Footer */
+.site-footer{
+  border-top:1px solid var(--line);
+  padding:20px var(--gutter);
+  display:flex;justify-content:space-between;align-items:center;
+  max-width:var(--container);margin:36px auto 0;
+}
+.site-footer nav a{margin-right:22px;color:var(--brand)}
+.site-footer nav a:hover{color:#000}
+
+/* POPUPS */
+.popup{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:10;}
+.popup-content{background:#fff;padding:20px;border-radius:6px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto}
+.popup h3{margin-bottom:12px}
+.popup input,.popup select,.popup textarea{width:100%;margin:6px 0 12px;padding:8px;border:1px solid var(--line)}
+.popup .btn{width:100%;margin-top:10px}
+.close{float:right;cursor:pointer;color:var(--muted);}
+
+/* Add Teacher popup */
+/* ===== Add Teacher: 2-column form ===== */
+#addPopup .popup-content{ max-width:700px; }
+
+.add-form .form-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:14px;
+}
+
+.add-form .full{ grid-column:1 / -1; }
+
+.add-form label{
+  display:block;
+  font-size:14px;
+  color:#555;
+  margin:0 0 6px;
+}
+
+.add-form input,
+.add-form select,
+.add-form textarea{
+  width:100%;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:4px;
+  font:inherit;
+}
+
+.add-form textarea{ min-height:110px; resize:vertical; }
+
+.add-form .inline{
+  display:flex; align-items:center; gap:14px;
+}
+
+.add-form .inline label{
+  display:inline-flex; align-items:center; gap:6px; margin:0;
+  font-weight:500; color:inherit;
+}
+
+.add-form .muted{ color:#777; font-size:13px; }
+
+.add-form .actions{
+  grid-column:1 / -1;
+  margin-top:6px;
+}
+
+.add-form .btn-primary{
+  width:100%;
+  padding:10px 18px;
+  border:1px solid var(--brand);
+  color:var(--brand);
+  background:#fff;
+  border-radius:6px;
+  font-weight:600;
+  cursor:pointer;
+}
+.add-form .btn-primary:hover{ background:var(--brand); color:#fff; }
+
+#openAdd{display:none}
+#openAdd:checked ~ #addPopup{display:flex}
+
+/* Teacher Info popups */
+.modal:target{display:flex}
+
+/* адаптив */
+@media (max-width:768px){
+  .header .row{flex-wrap:wrap;}
+  .search input{width:100%;}
+  .top-teachers{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));}
+  .favorites-section .page{gap:12px}
+  .favorites-section .fav-card{min-width:130px}
+  .favorites-section .fav-card img,
+  .favorites-section .fav-card .circle{width:110px;height:110px}
+  .site-footer{flex-direction:column;gap:14px}
+}
+  /* ===== Teacher Info card-like modal ===== */
+/* ===== Teacher Info card-like modal (desktop baseline) ===== */
+/* ===== Teacher Info card-like modal (desktop baseline) ===== */
+.popup.modal .popup-content{
+  max-width:900px;
+  padding:0;
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.ti-card{display:block;}
+.ti-head{
+  background:#2f2f33;color:#fff;font-weight:600;
+  padding:10px 16px;font-size:15px;letter-spacing:.2px;
+}
+
+.popup.modal .ti-body{
+  display:flex;
+  gap:24px;
+  padding:18px 20px 22px;
+  align-items:flex-start;
+  flex-wrap:nowrap;
+}
+
+.popup.modal .ti-body .ti-photo{
+  width:180px; height:220px; flex:0 0 180px;
+  object-fit:cover; border-radius:8px; display:block;
+}
+
+.ti-name{
+  font-family:"Playfair Display",serif;font-size:32px;line-height:1.15;
+  margin-bottom:8px;display:flex;align-items:center;gap:10px;
+}
+.ti-star{margin-left:auto;font-size:22px;color:#ffd44d}
+.ti-spec{font-weight:700;margin-bottom:6px}
+.ti-meta{color:#666;margin:6px 0 10px}
+.ti-contact a{color:#1a73e8}
+.ti-contact{margin-bottom:12px}
+.ti-desc{color:#333}
+
+.popup .close{position:absolute;right:12px;top:10px;color:#cfcfd4;font-size:20px;line-height:1}
+
+/* Дуже вузькі екрани — складаємо в колонку */
+@media (max-width:560px){
+  .popup.modal .ti-body{flex-direction:column}
+  .popup.modal .ti-body .ti-photo{
+    width:100%; height:auto; aspect-ratio:16/9; flex:0 0 auto;
+  }
+}
+
+
+
+/* мобильную «колонку» включаем только на очень узких экранах */
+@media (max-width:560px){
+  .popup.modal .ti-body{flex-direction:column !important}
+  .popup.modal .ti-body .ti-photo{
+    width:100% !important;
+    height:auto !important;
+    aspect-ratio:16/9;
+    flex:0 0 auto !important;
+  }
+}
+
+
+.ti-name{
+  font-family:"Playfair Display",serif;font-size:32px;line-height:1.15;
+  margin-bottom:8px;display:flex;align-items:center;gap:10px;
+}
+.ti-star{margin-left:auto;font-size:22px;color:#ffd44d}
+.ti-spec{font-weight:700;margin-bottom:6px}
+.ti-meta{color:#666;margin:6px 0 10px}
+.ti-contact a{color:#1a73e8}
+.ti-contact{margin-bottom:12px}
+.ti-desc{color:#333}
+
+.popup .close{position:absolute;right:12px;top:10px;color:#cfcfd4;font-size:20px;line-height:1}
+
+/* адаптив для карточки */
+@media (max-width:768px){
+  .ti-body{flex-direction:column}
+  .ti-photo{width:100%;height:auto;aspect-ratio:16/9}
+}
+
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="container row">
+    <div class="brand">Teacherfinder</div>
+    <nav class="nav">
+      <a href="#">Teachers</a>
+      <a href="#">Statistics</a>
+      <a href="#favorites">Favorites</a>
+      <a href="#">About</a>
+    </nav>
+    <div class="search"><input type="text" placeholder="Search teacher..."></div>
+    <label for="openAdd" class="btn">Add teacher</label>
+  </div>
+</header>
+
+<main class="container">
+  <h2>Top Teachers</h2>
+  <div class="top-teachers">
+    <a href="#ti-ihor" class="teacher-card"><img src="https://tse2.mm.bing.net/th/id/OIP.gBsZ_GdxmnWC1pF7gtJ8sAHaFD?rs=1&pid=ImgDetMain&o=7&rm=3"><b>Ihor Tkachuk</b><small>Ukraine</small></a>
+    <a href="#ti-pragg" class="teacher-card"><img src="https://img.freepik.com/premium-photo/indian-sikh-teacher-during-a-lecture-in-a-classroom_921026-9476.jpg"><b>Pragg Ramesh</b><small>India</small></a>
+    <a href="#ti-floor" class="teacher-card"><img src="https://i.pravatar.cc/110?img=3"><b>Floor Jansen <span class="star">★</span></b><small>Netherlands</small></a>
+    <a href="#ti-john" class="teacher-card"><img src="https://thumbs.dreamstime.com/b/portrait-young-male-teacher-background-school-blackboard-teacher-s-day-knowledge-day-back-to-school-study-159722312.jpg"><b>John Burke</b><small>England</small></a>
+    <a href="#ti-ari" class="teacher-card"><img src="https://i.pravatar.cc/110?img=5"><b>Ari Tang</b><small>China</small></a>
+    <a href="#ti-anna" class="teacher-card"><div class="circle">A.M</div><b>Anna Makarevich</b><small>Belarus</small></a>
+  </div>
+
+  <h2>Statistics</h2>
+  <div class="stats">
+    <table>
+      <thead><tr><th>Name</th><th>Speciality</th><th>Age</th><th>Gender</th><th>Nationality</th></tr></thead>
+      <tbody>
+        <tr><td>Daisy Alexander</td><td>Chemistry</td><td>28</td><td>Female</td><td>Vietnam</td></tr>
+        <tr><td>Julia Bradley</td><td>Math</td><td>26</td><td>Female</td><td>USA</td></tr>
+        <tr><td>Rita Hart</td><td>Art</td><td>41</td><td>Female</td><td>Ireland</td></tr>
+        <tr><td>Jonathan Jacobs</td><td>Math</td><td>32</td><td>Male</td><td>England</td></tr>
+        <tr><td>Nathaniel White</td><td>Computer Science</td><td>37</td><td>Male</td><td>Austria</td></tr>
+        <tr><td>Frank Medina</td><td>English</td><td>43</td><td>Male</td><td>Italy</td></tr>
+        <tr><td>Ella Curtis</td><td>Chess</td><td>34</td><td>Female</td><td>USA</td></tr>
+        <tr><td>Claire Simmmons</td><td>Art</td><td>38</td><td>Female</td><td>Netherlands</td></tr>
+        <tr><td>Benjamin Knight</td><td>Biology</td><td>44</td><td>Male</td><td>Scotland</td></tr>
+        <tr><td>Norma Rose</td><td>Statistics</td><td>36</td><td>Female</td><td>France</td></tr>
+      </tbody>
+    </table>
+    <div class="pagination">
+      <a href="#" class="active">1</a>
+      <a href="#">2</a>
+      <a href="#">3</a>
+      <span>…</span>
+      <a href="#">Last</a>
+    </div>
+  </div>
+
+  <h2 id="favorites">Favorites</h2>
+
+  <!-- Favorites (радио + карусель в одном родителе .favorites-section) -->
+  <section class="favorites-section" id="favorites">
+
+  <!-- позиции: всего 15 карточек; видно ~5 → 11 позиций (0..10) -->
+  <input type="radio" name="pos" id="pos-0"  checked>
+  <input type="radio" name="pos" id="pos-1">
+  <input type="radio" name="pos" id="pos-2">
+  <input type="radio" name="pos" id="pos-3">
+  <input type="radio" name="pos" id="pos-4">
+  <input type="radio" name="pos" id="pos-5">
+  <input type="radio" name="pos" id="pos-6">
+  <input type="radio" name="pos" id="pos-7">
+  <input type="radio" name="pos" id="pos-8">
+  <input type="radio" name="pos" id="pos-9">
+  <input type="radio" name="pos" id="pos-10">
+
+  <div class="carousel-wrap">
+    <!-- стрелки (внизу) -->
+    <label for="pos-0"  class="arrow left  left-to0">‹</label>
+    <label for="pos-1"  class="arrow right right-to1">›</label>
+
+    <label for="pos-1"  class="arrow left  left-to1">‹</label>
+    <label for="pos-2"  class="arrow right right-to2">›</label>
+
+    <label for="pos-2"  class="arrow left  left-to2">‹</label>
+    <label for="pos-3"  class="arrow right right-to3">›</label>
+
+    <label for="pos-3"  class="arrow left  left-to3">‹</label>
+    <label for="pos-4"  class="arrow right right-to4">›</label>
+
+    <label for="pos-4"  class="arrow left  left-to4">‹</label>
+    <label for="pos-5"  class="arrow right right-to5">›</label>
+
+    <label for="pos-5"  class="arrow left  left-to5">‹</label>
+    <label for="pos-6"  class="arrow right right-to6">›</label>
+
+    <label for="pos-6"  class="arrow left  left-to6">‹</label>
+    <label for="pos-7"  class="arrow right right-to7">›</label>
+
+    <label for="pos-7"  class="arrow left  left-to7">‹</label>
+    <label for="pos-8"  class="arrow right right-to8">›</label>
+
+    <label for="pos-8"  class="arrow left  left-to8">‹</label>
+    <label for="pos-9"  class="arrow right right-to9">›</label>
+
+    <label for="pos-9"  class="arrow left  left-to9">‹</label>
+    <label for="pos-10" class="arrow right right-to10">›</label>
+
+    <div class="carousel">
+      <div class="track">
+        <!-- просто все 15 карточек подряд, как у тебя -->
+        <a href="#ti-ihor" class="fav-card"><img src="https://tse2.mm.bing.net/th/id/OIP.gBsZ_GdxmnWC1pF7gtJ8sAHaFD?rs=1&pid=ImgDetMain&o=7&rm=31"><b>Ihor Tkachuk</b><small>Ukraine</small></a>
+        <a href="#ti-anna" class="fav-card"><div class="circle">A.M</div><b>Anna Makarevich</b><small>Belarus</small></a>
+        <a href="#ti-john" class="fav-card"><img src="https://thumbs.dreamstime.com/b/portrait-young-male-teacher-background-school-blackboard-teacher-s-day-knowledge-day-back-to-school-study-159722312.jpg"><b>John Burke</b><small>Belgium</small></a>
+        <a href="#ti-ari" class="fav-card"><img src="https://i.pravatar.cc/130?img=5"><b>Ari Tang</b><small>China</small></a>
+        <a href="#ti-floor" class="fav-card"><img src="https://i.pravatar.cc/130?img=3"><b>Floor Jansen</b><small>Denmark</small></a>
+
+        <a href="#ti-daisy" class="fav-card"><img src="https://i.pravatar.cc/130?img=15"><b>Daisy Alexander</b><small>Vietnam</small></a>
+        <a href="#ti-rita" class="fav-card"><img src="https://i.pravatar.cc/130?img=20"><b>Rita Hart</b><small>Ireland</small></a>
+        <a href="#ti-ella" class="fav-card"><img src="https://i.pravatar.cc/130?img=12"><b>Ella Curtis</b><small>USA</small></a>
+        <a href="#ti-ben" class="fav-card"><img src="https://i.pravatar.cc/130?img=30"><b>Benjamin Knight</b><small>Scotland</small></a>
+        <a href="#ti-norma" class="fav-card"><img src="https://i.pravatar.cc/130?img=24"><b>Norma Rose</b><small>France</small></a>
+
+        <a href="#ti-pragg" class="fav-card"><img src="https://img.freepik.com/premium-photo/indian-sikh-teacher-during-a-lecture-in-a-classroom_921026-9476.jpg"><b>Pragg Ramesh</b><small>India</small></a>
+        <a href="#ti-john" class="fav-card"><img src="https://thumbs.dreamstime.com/b/portrait-young-male-teacher-background-school-blackboard-teacher-s-day-knowledge-day-back-to-school-study-159722312.jpg"><b>John Burke</b><small>England</small></a>
+        <a href="#ti-ihor" class="fav-card"><img src="https://tse2.mm.bing.net/th/id/OIP.gBsZ_GdxmnWC1pF7gtJ8sAHaFD?rs=1&pid=ImgDetMain&o=7&rm=3"><b>Ihor Tkachuk</b><small>Ukraine</small></a>
+        <a href="#ti-anna" class="fav-card"><div class="circle">A.M</div><b>Anna Makarevich</b><small>Belarus</small></a>
+        <a href="#ti-ari" class="fav-card"><img src="https://i.pravatar.cc/130?img=5"><b>Ari Tang</b><small>China</small></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+  <!-- текстовый блок под Favorites -->
+  <section class="about">
+    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque facere, hic impedit itaque molestiae sit tempore? Ea in mollitia natus rerum voluptates.</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aliquam eligendi illum in inventore ipsum odio officiis omnis quisquam sed tempora?</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. A atque esse expedita id iusto mollitia, odit sint ullam veritatis vero?</p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <nav>
+    <a href="#">Teachers</a>
+    <a href="#">Statistics</a>
+    <a href="#favorites">Favorites</a>
+    <a href="#">About</a>
+  </nav>
+  <label for="openAdd" class="btn">Add teacher</label>
+</footer>
+
+<!-- ===== POPUPS ===== -->
+<input type="checkbox" id="openAdd" />
+<div class="popup" id="addPopup">
+  <div class="popup-content">
+    <a href="#" class="close">✖</a>
+    <h3>Add Teacher</h3>
+   <form class="add-form">
+  <div class="form-grid">
+    <div class="full">
+      <label>Name</label>
+      <input type="text" placeholder="Enter name">
+    </div>
+
+    <div class="full">
+      <label>Speciality</label>
+      <select>
+        <option>Mathematics</option>
+        <option>Chemistry</option>
+        <option>Physics</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Country</label>
+      <select>
+        <option>Ukraine</option>
+        <option>USA</option>
+        <option>NL</option>
+      </select>
+    </div>
+    <div>
+      <label>City</label>
+      <input type="text" placeholder="City">
+    </div>
+
+    <div>
+      <label>Email</label>
+      <input type="email" placeholder="Email">
+    </div>
+    <div>
+      <label>Phone</label>
+      <input type="tel" placeholder="Phone">
+    </div>
+
+    <div>
+      <label>Date of birth</label>
+      <input type="date">
+    </div>
+    <div>
+      <label>Gender</label>
+      <div class="inline">
+        <label><input type="radio" name="Gender"> Male</label>
+        <label><input type="radio" name="Gender"> Female</label>
+      </div>
+    </div>
+
+    <div>
+      <label>Background color <span class="muted">(optional)</span></label>
+      <input type="color">
+    </div>
+
+    <div class="full">
+      <label>Notes (optional)</label>
+      <textarea placeholder="Notes"></textarea>
+    </div>
+
+    <div class="actions">
+      <label for="openAdd" class="btn-primary">Add</label>
+    </div>
+  </div>
+</form>
+ </form>
+
+  </div> <!-- /.popup-content -->
+</div> 
+
+<!-- Teacher Info модалки -->
+<!-- Ihor -->
+<div class="popup modal" id="ti-ihor">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://tse2.mm.bing.net/th/id/OIP.gBsZ_GdxmnWC1pF7gtJ8sAHaFD?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Ihor Tkachuk">
+      <div>
+        <div class="ti-name">Ihor Tkachuk <span class="ti-star">★</span></div>
+        <div class="ti-spec">Chemistry</div>
+        <div class="ti-meta">Kyiv, Ukraine · Male</div>
+        <div class="ti-contact">
+          <p><a href="mailto:ihor@domain.com">ihor@domain.com</a></p>
+          <p>+380991112233</p>
+        </div>
+        <p class="ti-desc">Предмет: Хімія
+Освіта: Закінчив хімічний факультет Київського національного університету імені Тараса Шевченка, спеціальність – органічна хімія.
+Досвід роботи: понад 10 років викладання у школах та на підготовчих курсах.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Anna -->
+<div class="popup modal" id="ti-anna">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://i.pravatar.cc/520?img=6" alt="Anna Makarevich">
+      <div>
+        <div class="ti-name">Anna Makarevich</div>
+        <div class="ti-spec">Math</div>
+        <div class="ti-meta">Minsk, Belarus · Female</div>
+        <div class="ti-contact">
+          <p><a href="mailto:anna@domain.com">anna@domain.com</a> · +375291112233</p>
+        </div>
+        <p class="ti-desc">Найкращий вчитель з математики</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- John -->
+<div class="popup modal" id="ti-john">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://thumbs.dreamstime.com/b/portrait-young-male-teacher-background-school-blackboard-teacher-s-day-knowledge-day-back-to-school-study-159722312.jpg" alt="John Burke">
+      <div>
+        <div class="ti-name">John Burke</div>
+        <div class="ti-spec">Physics</div>
+        <div class="ti-meta">London, England · Male</div>
+        <div class="ti-contact">
+          <p><a href="mailto:john@domain.com">john@domain.com</a> · +44 7000 111223</p>
+        </div>
+        <p class="ti-desc">викладач англійської мови з понад 7-річним досвідом роботи у школі та на мовних курсах. Він закінчив Київський національний університет імені Тараса Шевченка, спеціалізується на сучасній англійській мові та методиці викладання..</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ari -->
+<div class="popup modal" id="ti-ari">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://i.pravatar.cc/520?img=5" alt="Ari Tang">
+      <div>
+        <div class="ti-name">Ari Tang</div>
+        <div class="ti-spec">Biology</div>
+        <div class="ti-meta">Beijing, China · Female</div>
+        <div class="ti-contact">
+          <p><a href="mailto:ari@domain.com">ari@domain.com</a> · +86 10 5555 5555</p>
+        </div>
+        <p class="ti-desc">викладач біології з понад 10-річним досвідом роботи у школі та приватних освітніх центрах. Вона закінчила Львівський національний університет імені Івана Франка, де спеціалізувалася на молекулярній біології та екологі</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floor -->
+<div class="popup modal" id="ti-floor">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://i.pravatar.cc/520?img=3" alt="Floor Jansen">
+      <div>
+        <div class="ti-name">Floor Jansen <span class="ti-star">★</span></div>
+        <div class="ti-spec">PE</div>
+        <div class="ti-meta">Copenhagen, Denmark · Female</div>
+        <div class="ti-contact">
+          <p><a href="mailto:floor@domain.com">floor@domain.com</a> · +45 88 22 33 44</p>
+        </div>
+        <p class="ti-desc">Учитель фізкультури, який вірить, що рух — це основа здоров’я й гарного настрою. На його уроках учні не лише опановують вправи та спортивні ігри, а й навчаються командній роботі, дисципліні та впевненості у власних силах. Він поєднує класичні методики з сучасними активностями, щоб кожен учень відчував задоволення від занять спортом і розвивав витривалість, силу та координацію.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pragg -->
+<div class="popup modal" id="ti-pragg">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://img.freepik.com/premium-photo/indian-sikh-teacher-during-a-lecture-in-a-classroom_921026-9476.jpg" alt="Pragg Ramesh">
+      <div>
+        <div class="ti-name">Pragg Ramesh</div>
+        <div class="ti-spec">faith</div>
+        <div class="ti-meta">Delhi, India · Male</div>
+        <div class="ti-contact">
+          <p><a href="mailto:pragg@domain.com">pragg@domain.com</a> · +91 90000 12345</p>
+        </div>
+        <p class="ti-desc">Учитель, який поєднує традиційні знання про віру з сучасним інді-баченням. У своїй практиці він створює теплу й щиру атмосферу, де кожен може вільно досліджувати духовність, задавати питання та знаходити власні відповіді. Його уроки — це гармонія музики, розмов і прикладів з життя, які допомагають студентам відчути, що віра — це не лише правила, а й особистий шлях.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Daisy -->
+<div class="popup modal" id="ti-daisy">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://i.pravatar.cc/520?img=15" alt="Daisy Alexander">
+      <div>
+        <div class="ti-name">Daisy Alexander</div>
+        <div class="ti-spec">Chemistry</div>
+        <div class="ti-meta">Hanoi, Vietnam · Female</div>
+        <div class="ti-contact">
+          <p><a href="mailto:daisy@domain.com">daisy@domain.com</a></p>
+        </div>
+        <p class="ti-desc">Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rita -->
+<div class="popup modal" id="ti-rita">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://i.pravatar.cc/520?img=20" alt="Rita Hart">
+      <div>
+        <div class="ti-name">Rita Hart</div>
+        <div class="ti-spec">Art</div>
+        <div class="ti-meta">Dublin, Ireland · Female</div>
+        <div class="ti-contact">
+          <p><a href="mailto:rita@domain.com">rita@domain.com</a></p>
+        </div>
+        <p class="ti-desc">Nullam quis risus eget urna mollis ornare vel eu leo.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ella -->
+<div class="popup modal" id="ti-ella">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://i.pravatar.cc/520?img=12" alt="Ella Curtis">
+      <div>
+        <div class="ti-name">Ella Curtis</div>
+        <div class="ti-spec">Chess</div>
+        <div class="ti-meta">Chicago, USA · Female</div>
+        <div class="ti-contact">
+          <p><a href="mailto:ella@domain.com">ella@domain.com</a></p>
+        </div>
+        <p class="ti-desc">Morbi leo risus, porta ac consectetur ac, vestibulum at eros.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Benjamin -->
+<div class="popup modal" id="ti-ben">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://i.pravatar.cc/520?img=30" alt="Benjamin Knight">
+      <div>
+        <div class="ti-name">Benjamin Knight</div>
+        <div class="ti-spec">Biology</div>
+        <div class="ti-meta">Edinburgh, Scotland · Male</div>
+        <div class="ti-contact">
+          <p><a href="mailto:ben@domain.com">ben@domain.com</a></p>
+        </div>
+        <p class="ti-desc">Cras mattis consectetur purus sit amet fermentum.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Norma -->
+<div class="popup modal" id="ti-norma">
+  <div class="popup-content ti-card">
+    <a href="#" class="close">✖</a>
+    <div class="ti-head">teacher info</div>
+    <div class="ti-body">
+      <img class="ti-photo" src="https://i.pravatar.cc/520?img=24" alt="Norma Rose">
+      <div>
+        <div class="ti-name">Norma Rose</div>
+        <div class="ti-spec">Statistics</div>
+        <div class="ti-meta">Lyon, France · Female</div>
+        <div class="ti-contact">
+          <p><a href="mailto:norma@domain.com">norma@domain.com</a></p>
+        </div>
+        <p class="ti-desc">Maecenas faucibus mollis interdum.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>
