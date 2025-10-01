@@ -1,0 +1,26 @@
+{
+  "teachers": [
+    {
+      "id": "db6a",
+      "full_name": "Test Teacher",
+      "country": "Ukraine",
+      "city": "Kyiv"
+    },
+    {
+      "id": "b7e09f1a-9f6f-42f3-b409-9bc084eb7022",
+      "full_name": "sasas",
+      "speciality": "Mathematics",
+      "country": "—",
+      "city": "kiev",
+      "email": "21212",
+      "phone": "38090",
+      "b_date": "2222-02-12",
+      "age": -197,
+      "bg_color": "#000000",
+      "note": "wqwqwqw",
+      "gender": "on",
+      "picture_large": "",
+      "favorite": false
+    }
+  ]
+}
